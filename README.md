@@ -14,6 +14,7 @@ whole period of power outage.
 
 The single 5v power adapter could be used both to charge the esp32 battery and to detect the power outage:
 ![schematic](schematic.png)
+The voltage divider circuit (two resistors, 2*R1 = R2 ) is used to reduce power probe voltage to 3.3v, please do not apply 5v to an input pin.
 
 In Telegram, you need to determine chat id using @IDBot and create a bot that will submit the messages using @BotFather.
 It is also required to add the bot to the chat.
