@@ -1,5 +1,6 @@
 # telegram-power-info
-This project submits messages when power goes out or is back on into a Telegram chat:
+This project submits messages into a Telegram chat when power goes out or is back on:
+
 ![chat](tg.jpg)
 
 The project is based on esp32 board, please use VSCode with PlatformIO to upload the software.
