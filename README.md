@@ -21,4 +21,5 @@ In Telegram, you need to determine chat id using @IDBot and create a bot that wi
 It is also required to add the bot to the chat.
 
 Your community affected by outages will enjoy it:
+
 ![chat](reallife.jpg)
