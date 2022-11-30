@@ -3,7 +3,7 @@ This project submits messages when power goes out or is back on into a Telegram 
 ![chat](tg.jpg)
 
 The project is based on esp32 board, please use VSCode with PlatformIO to upload the software.
-WiFi connectivity is required in an moment of status chages to be able to send the messages,
+WiFi connectivity is required in a moment of status chages to be able to send the messages,
 so some king of UPS is required for your WiFi router. Esp32 also requires backup power, 
 this could be done using a regular LiIon 3.7v battery and a DW01 based charging board, please see this
 [video](https://www.youtube.com/watch?v=Lk__xTxLlY0) for details.
