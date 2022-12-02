@@ -6,25 +6,26 @@
 #include <EEPROM.h>
 #include <SimpleTimer.h>
 
-
-// eeprom, no need to change this
+// eeprom settings, no need to change this if no eeprom errors
 #define NO_POWER_FLAG 7 
 #define WITH_POWER_FLAG 16  
 #define EEPROM_ADDR 8 
 
 // Telegram
-#define TG_CHAT_ID "your value"
+// please use @myidbot "/getgroupid" command to determine group/channel id
+#define TG_CHAT_ID "YOUR OWN VALUE"
 #include <UniversalTelegramBot.h>  
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
-#define BOTtoken "your value"
+// please use @BothFather to create a bot, you need to add the bot to the group/channel
+#define BOTtoken "YOUR OWN VALUE"
 WiFiClientSecure client;
 UniversalTelegramBot bot(BOTtoken, client);
 // Telegram end
 
-// Wifi
-#define WIFI_SSID "your value"
-#define WIFI_PASSWORD "your value"
+// Wifi connection settings
+#define WIFI_SSID "YOUR OWN VALUE"
+#define WIFI_PASSWORD "YOUR OWN VALUE"
 
 // Text messages
 #define MSG_POWER_ON "Power is on💡"
@@ -37,7 +38,7 @@ SimpleTimer timer;
 
 boolean isEepromError = false;
 
-boolean isEepromValid(int eeprom) {
+boolean isEepromValid(int eeprom) {  
   return eeprom == WITH_POWER_FLAG || eeprom == NO_POWER_FLAG;
 }
 
@@ -48,7 +49,9 @@ void readExternalPower() {
   }
 
   int eeprom = EEPROM.read(EEPROM_ADDR);
-  if (!isEepromValid(eeprom)) { 
+  if (!isEepromValid(eeprom)) {    
+    //  eeprom write count is limited theoreticaly leading to an error here, 
+    //  you can try to change address or use another esp32 board
     Serial.println("EEPROM error!");
     isEepromError = true; 
     return;
@@ -78,7 +81,6 @@ void readExternalPower() {
       EEPROM.commit();    
     }
   }
-
 }
 
 void setup() {
@@ -101,12 +103,14 @@ void setup() {
   int eeprom = EEPROM.read(EEPROM_ADDR);
   Serial.println(eeprom);
   if (!isEepromValid(eeprom)) {
+    // first start ever
     EEPROM.write(EEPROM_ADDR, WITH_POWER_FLAG);
     EEPROM.commit();  
     Serial.println("EEPROM initialized");
     eeprom = EEPROM.read(EEPROM_ADDR);
     Serial.println(eeprom);    
   } else {
+    // next restarts
     Serial.println("EEPROM old value is valid");
   }
 
@@ -132,11 +136,16 @@ void setup() {
   }
   Serial.println(now);
 
+  // the default value is too small leading to duplicated messages because "ok" from TG server is discarded
+  bot.waitForResponse = 25000;
+
   timer.setInterval(5000, readExternalPower);
 }
 
 void loop() {
   if (WiFi.status() == WL_CONNECTED && !isEepromError) {
+    // watchdog: if esp_task_wdt_reset() is not called for too long,
+    // the board is restarted in an attempt to fix itself
     esp_task_wdt_reset();
   }
   timer.run();
