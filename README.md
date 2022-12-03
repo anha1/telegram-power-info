@@ -46,6 +46,7 @@ Viber API gives an ability to implement something similar, but the technical imp
 more demanding (it requires a server with callback URL and a kind of a database to track subscribed users)
 so a simple Viber/Telegram switch will not be implemented here.
 
+### Why?
 Your community affected by outages will enjoy it:
 
 ![chat](reallife.jpg)
