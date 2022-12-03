@@ -10,9 +10,20 @@ so some king of UPS is required for your WiFi router.
 Esp32 also requires backup power to send the message, there are two ways to achieve this:
 
 ### Approach 1. Using LiIon battery for ESP32
-This could be done using a regular LiIon 3.7v battery and a DW01 based charging board, please see this
+This could be done using a regular LiIon 3.7v battery and charging board for example TC4056, please see this
 [video](https://www.youtube.com/watch?v=Lk__xTxLlY0) for details. 
+To reduce supply power to 3.3V a voltage regulator like MCP1700-3302E could be use, see this [video](https://www.youtube.com/watch?v=Z-36HflHotU)
+for details. To power ESP32, two MCP1700-3302E could be use in parallel.
+Short circuit a battery never ends well so please be careful working with the battery!
 The single 5v power adapter could be used both to charge the esp32 battery and to detect the power outage.
+So the full list of materials will be:
+# ESP32 board
+# TC4056 charging module
+# Two MCP1700-3302E voltage regulators
+# Two resistors: R1 = 1K, R2 = 2K (or other values with the same ratio R2 = 2 * R1)
+# Electrolytic capacitor ~1000uF
+# Ceramic capacitor ~100nF
+# Phone USB charged and MicroUSB cable
 
 ### Approach 2. Using two power supplies
 It is possible to use two 5v power supplies: one connected directly do detect power loss,
