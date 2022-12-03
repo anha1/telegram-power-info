@@ -17,13 +17,13 @@ for details. To power ESP32, two MCP1700-3302E could be use in parallel.
 Short circuit a battery never ends well so please be careful working with the battery!
 The single 5v power adapter could be used both to charge the esp32 battery and to detect the power outage.
 So the full list of materials will be:
-# ESP32 board
-# TC4056 charging module
-# Two MCP1700-3302E voltage regulators
-# Two resistors: R1 = 1K, R2 = 2K (or other values with the same ratio R2 = 2 * R1)
-# Electrolytic capacitor ~1000uF
-# Ceramic capacitor ~100nF
-# Phone USB charged and MicroUSB cable
+- ESP32 board
+- TC4056 charging module
+- Two MCP1700-3302E voltage regulators
+- Two resistors: R1 = 1K, R2 = 2K (or other values with the same ratio R2 = 2 * R1)
+- Electrolytic capacitor ~1000uF
+- Ceramic capacitor ~100nF
+- Phone USB charged and MicroUSB cable
 
 ### Approach 2. Using two power supplies
 It is possible to use two 5v power supplies: one connected directly do detect power loss,
