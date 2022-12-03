@@ -12,7 +12,7 @@ Esp32 also requires backup power to send the message, there are two ways to achi
 ### Approach 1. Using LiIon battery for ESP32
 This could be done using a regular LiIon 3.7v battery and charging board for example TC4056, please see this
 [video](https://www.youtube.com/watch?v=Lk__xTxLlY0) for details. 
-To reduce supply power to 3.3V a voltage regulator like MCP1700-3302E could be use, see this [video](https://www.youtube.com/watch?v=Z-36HflHotU)
+To reduce supply power to 3.3V a voltage regulator like MCP1700-3302E could be used, see this [video](https://www.youtube.com/watch?v=Z-36HflHotU)
 for details. To power ESP32, two MCP1700-3302E could be used in parallel.
 Short circuit of battery outputs never ends well so please be careful when working with the battery!
 The single 5v power adapter could be used both to charge the esp32 battery and to detect the power outage.
