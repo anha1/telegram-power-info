@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "SPIFFS.h"
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <esp_int_wdt.h>
@@ -34,12 +35,164 @@ UniversalTelegramBot bot(BOTtoken, client);
 // Power probe pin on the board, up to 3.3v, please do not use 5v directly
 #define EXTERNAL_POWER_PROBE_PIN 4
 
+/** Maximum amount of rows in timestamp file */
+const int maxRows = 5;
+
 SimpleTimer timer;
 
 boolean isEepromError = false;
 
 boolean isEepromValid(int eeprom) {  
   return eeprom == WITH_POWER_FLAG || eeprom == NO_POWER_FLAG;
+}
+
+
+void appendTimestampAndBooleanToFile(const char* path, bool booleanValue) {
+  // Read existing rows
+  String rows[maxRows];
+  int rowCount = readRowsFromFile(path, rows);
+
+  // Get current time
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+    return;
+  }
+
+  // Create timestamp string
+  char timeString[64];
+  strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeinfo);
+
+  // Create new row
+  String newRow = String(timeString) + ", " + (booleanValue ? "true" : "false");
+
+  // Add new row to the list
+  if (rowCount < maxRows) {
+    rows[rowCount++] = newRow;
+  } else {
+    for (int i = 1; i < maxRows; i++) {
+      rows[i - 1] = rows[i];
+    }
+    rows[maxRows - 1] = newRow;
+  }
+
+  // Write rows back to the file
+  writeRowsToFile(path, rows, rowCount);
+
+  // Print the appended timestamp and boolean value
+  Serial.print("Appended: ");
+  Serial.println(newRow);
+}
+
+int readRowsFromFile(const char* path, String rows[]) {
+  int rowCount = 0;
+
+  File file = SPIFFS.open(path, FILE_READ);
+  if (!file) {
+    Serial.println("Failed to open file for reading");
+    return rowCount;
+  }
+
+  while (file.available() && rowCount < maxRows) {
+    rows[rowCount++] = file.readStringUntil('\n');
+  }
+  file.close();
+
+  return rowCount;
+}
+
+void writeRowsToFile(const char* path, String rows[], int rowCount) {
+  File file = SPIFFS.open(path, FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+
+  for (int i = 0; i < rowCount; i++) {
+    file.println(rows[i]);
+  }
+  file.close();
+}
+
+String readLastRowFromFile(const char* path) {
+  String rows[maxRows];
+  int rowCount = readRowsFromFile(path, rows);
+  if (rowCount == 0) {
+    return "";
+  }
+
+  return rows[rowCount - 1];
+}
+
+String calculateTimeDifference(String lastRow) {
+  int commaIndex = lastRow.indexOf(',');
+  if (commaIndex == -1) {
+    return "Invalid row format";
+  }
+
+  String lastTimestamp = lastRow.substring(0, commaIndex);
+  lastTimestamp.trim();
+
+  struct tm lastTimeinfo;
+  if (strptime(lastTimestamp.c_str(), "%Y-%m-%d %H:%M:%S", &lastTimeinfo) == NULL) {
+    return "Invalid timestamp format";
+  }
+
+  time_t lastTime = mktime(&lastTimeinfo);
+
+  struct tm currentTimeinfo;
+  if (!getLocalTime(&currentTimeinfo)) {
+    return "Failed to obtain current time";
+  }
+
+  time_t currentTime = mktime(&currentTimeinfo);
+
+  double secondsDifference = difftime(currentTime, lastTime);
+
+  int days = secondsDifference / (60 * 60 * 24);
+  int hours = ((int)secondsDifference % (60 * 60 * 24)) / (60 * 60);
+  int minutes = ((int)secondsDifference % (60 * 60)) / 60;
+  int seconds = (int)secondsDifference % 60;
+
+  String timeDiffString = "";
+  if (days > 0) {
+    timeDiffString += String(days) + " d";
+  }
+  if (hours > 0) {
+    if (timeDiffString.length() > 0) {
+      timeDiffString += ", ";
+    }
+    timeDiffString += String(hours) + " hr";
+  }
+  if (minutes > 0) {
+    if (timeDiffString.length() > 0) {
+      timeDiffString += ", ";
+    }
+    timeDiffString += String(minutes) + " min";
+  }
+  if (seconds > 0) {
+    if (timeDiffString.length() > 0) {
+      timeDiffString += ", ";
+    }
+    timeDiffString += String(seconds) + " sec";
+  }
+
+  // If all values are zero
+  if (timeDiffString.length() == 0) {
+    timeDiffString = "0 sec";
+  }
+
+  return timeDiffString;
+}
+
+
+void printLocalTime() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
 }
 
 void readExternalPower() {
@@ -67,14 +220,18 @@ void readExternalPower() {
 
   if (isPowerBefore != isPowerNow) {
     Serial.print("status change detected, trying to send the message...");
+
+    String lastRow = readLastRowFromFile("/timestamps.txt");
+    String timeDiff = calculateTimeDifference(lastRow);
+
     if (isPowerNow) {
-      if (!bot.sendMessage(TG_CHAT_ID, MSG_POWER_ON, "")) {
+      if (!bot.sendMessage(TG_CHAT_ID, MSG_POWER_ON + String("\ntime without power: ") + String(timeDiff), "")) {
         return;
       }
       EEPROM.write(EEPROM_ADDR, WITH_POWER_FLAG);
       EEPROM.commit();   
     } else {
-      if (!bot.sendMessage(TG_CHAT_ID, MSG_POWER_OFF, "")) {
+      if (!bot.sendMessage(TG_CHAT_ID, MSG_POWER_OFF + String("\ntime with power: ") + String(timeDiff), "")) {
         return;
       }
       EEPROM.write(EEPROM_ADDR, NO_POWER_FLAG);
@@ -92,6 +249,15 @@ void setup() {
   Serial.println("Init watchdog:");
   esp_task_wdt_init(60, true);
   esp_task_wdt_add(NULL);
+
+  // Initialize SPIFFS
+  if (!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  } else {
+    Serial.println("SPIFFS mounted successfully");
+  }
+
 
   Serial.println("Init EEPROM:");
   if (!EEPROM.begin(16)) {
@@ -138,6 +304,8 @@ void setup() {
 
   // the default value is too small leading to duplicated messages because "ok" from TG server is discarded
   bot.waitForResponse = 25000;
+
+  
 
   timer.setInterval(5000, readExternalPower);
 }
